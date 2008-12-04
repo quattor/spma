@@ -1,0 +1,91 @@
+#
+# quattor SPMA configuration file
+#
+# This configuration file allows to select default
+# settings for SPMA options other than the application default ones.
+#
+#
+# 2/2003 German Cancio <German.Cancio@cern.ch>
+#
+#
+# For more information, see the spma(1) man page.
+
+#-------------------------------------------------------
+# * do we allow user installed packages or not (yes/no)
+#userpkgs = no
+
+# * do we give priority to user packages (only if userpkgs=yes)
+#userprio = no
+
+# * do we keep a list of SPMA managed packages 
+#   (can be set to 'no' only if userpkgs=yes)
+#usespmlist = yes
+
+#-------------------------------------------------------
+
+# * Local cache:
+
+#   enable local cache (yes/no)
+localcache = yes
+
+#   directory where to find the cache
+#cachedir = /var/spma-cache/
+
+#-------------------------------------------------------
+# * Proxy settings:
+
+#   Activates the proxy (yes/no)
+#proxy = yes
+
+#   Proxy type (forward or reverse)
+#proxytype = reverse
+
+#   List with IP addresses or DNS names of the proxy hosts
+#proxyhost = 
+
+#   Port to use on the proxy host
+#proxyport =
+
+
+#-------------------------------------------------------
+# * which is our packager? (rpm,pkg)
+#packager = rpm
+
+
+#-------------------------------------------------------
+#
+# * where to put the SPMA managed package list?
+#spmlist =
+
+# * our target configuration is found in...
+#targetconf =
+
+# * where to put the SPMA log file
+#logfile =
+
+#-------------------------------------------------------
+
+# (For RPM only)
+#
+# * set an alternate RPM database path
+#dbpath = 
+
+# * paths where to look for the rpmt executable
+#
+#rpmtpath = /usr/bin,/usr/local/bin
+
+# * rpmt executable names
+#
+#rpmtexec = rpmt-py,rpmt
+
+# * signature checking
+#
+#checksig =
+
+#-------------------------------------------------------
+# * debug level (1 to 5)
+#debug =
+
+# * verbose output
+#verbose =
+

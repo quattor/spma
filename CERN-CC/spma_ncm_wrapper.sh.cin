@@ -1,0 +1,27 @@
+#!/bin/bash
+
+[ -e /etc/nospma ] && exit
+
+if [ "$1" = "spma_ncm" ]
+then
+   shift
+   [ "$NOTD_EXEC_TODO" != 'boot' ] && perl -e 'sleep rand 360'
+fi
+
+if [ "$1x" = "x" ] ; then
+   args="--all" ;
+else
+   args=$* ;
+fi
+
+# run SPMA NCM component, SPMA and then NCM (for grub and the selected component)
+#
+@QTTR_SBIN@/ccm-fetch >>@QTTR_LOG@/ccm-fetch.log && \
+@QTTR_SBIN@/ncm-ncd --configure spma && \
+@QTTR_BIN@/spma && \
+@QTTR_SBIN@/ncm-ncd --configure grub && \
+@QTTR_SBIN@/ncm-ncd --configure $args
+
+
+
+

@@ -1,0 +1,12 @@
+spma_ncm {
+        runatcron=no
+        subatcron=yes
+        runatboot=no
+        subatboot=yes
+        server=regis.cern.ch,notdserv.cern.ch,notdv2serv.cern.ch
+        exec=@QTTR_SBIN@/spma_ncm_wrapper.sh
+        priority=500
+        waittofin=yes
+}
+
+

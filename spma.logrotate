@@ -1,0 +1,5 @@
+/var/log/spma.log {
+    monthly
+    notifempty
+    missingok
+}

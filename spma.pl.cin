@@ -1,0 +1,1084 @@
+#!@PERL_EXECUTABLE@ -w
+#
+#
+# SPMA: Software Package Manager Agent
+#
+# $Id: spma.pl.cin,v 1.27 2007/08/02 16:05:21 gcancio Exp $
+#
+
+=pod
+
+=head1 NAME
+
+spma - Software Package Manager Agent, quattor toolsuite
+       B<http://cern.ch/quattor>
+
+=head1 SYNOPSIS
+
+spma [options]
+
+(See spma --help for full list of options with default values.)
+
+=head1 DESCRIPTION
+
+The SPMA takes a list of software packages (e.g. URLs of a set of RPM
+or PKG files) and generates input to a package transaction application
+which will ensure that the packages installed on the machine are
+consistent with this list.  The SPMA uses a software packager program
+(C<rpmt> or C<pkgt>) to maintain the state of a machine according to a
+given desired configuration. This process can be summarised by the
+following:
+
+=over 4
+
+=item 1
+
+To generate a set of operations which, when applied to an existing
+machine configuration will result in a configuration which matches a
+given (or target) configuration.
+
+=item 2
+
+To apply the generated operations with a specified packager, make the
+output of the packager available and report the termination status of
+the packager.
+
+=item 3
+
+Optionally, allow deviations from the target configuration for the
+addition and removal of packages. (see Operations section below)
+
+=back
+
+Note that in this version, both RPM and PKG packaging systems are
+supported.
+
+=head1 OPTIONS
+
+=over 4
+
+=head2 Packager selection
+
+=item --packager (rpm/pkg)
+
+Selects the packaging system. (typically, 'rpm' for RedHat/SuSE
+Linux systems, 'pkg' for SUN Solaris systems)
+
+=head2 Target Configuration.
+
+=item --targetconf <file>
+
+The target configuration is specified in the file given by the
+targetconf option.
+
+Package definitions as space-separated values read from a file, one
+line per package. Each line has the following fields:
+
+<url>  <name>  <version> <release> <architecture>  [<policy switches>]
+
+where I<version> <release> can optionally be coded as a single
+wildcard character "*" to match any corresponding package
+I<version>. The C<url> field can be either a http://, ftp:// location
+or an absolute filename (/dir1/dir2/file).
+
+I<Policy switches> can be either C<ISMANDATORY> or C<ISUNWANTED>. (see
+Operations section below). Blank lines and any text following a hash
+character C<#> on a line are treated as comments and ignored.
+
+e.g. The following line in the Target Configuration file will force
+the installation of I<openssl> from a local RPM repository.
+
+C</my/repository/i386_sl5 openssl 0.9.6b 8 i386 ISMANDATORY>
+
+Note that multiple simultaneous versions of a package can be handled
+and installed by the SPMA.
+
+(Note that in future releases for RPM, the <version> field will contain
+the RPM version and RPM release separated by a dash (-).)
+
+The target configuration file cannot be empty (it has to specify at
+least one package) when running with 'no user packages' (see below).
+
+=head2 Local Configuration Policy.
+
+The following options are supported:
+
+=item --userpkgs (yes/no):
+
+"Allow User Packages". When set to yes, packages B<not> specified in
+the target configuration are allowed on the machine. If disabled all
+packages not listed in the target configuration will be deleted -
+therefore, use this option with care (note: by default it is set to
+'no user packages')!
+
+=item --userprio (yes/no):
+
+"Priority to User Packages". When enabled, and when there is a
+version/release difference between a target package in the target
+configuration and a user installed package, this policy determines
+whether the existing package is left unchanged.
+This option is only enabled if --userpkgs is set to 'yes'.
+
+=item --usespmlist (yes/no):
+
+If set to yes, the SPMA will keep a list of 'owned' packages. If set to
+no, all packages are considered to be managed by the user.
+The option can be set to 'no' only if --userpkgs is set to 'yes'.
+
+Setting this option to 'no' is recommended if the SPMA has to take
+care only of 'update' type operations (including deleting packages
+with 'ISUNWANTED').
+
+See also Operations section below for more information on
+'ISMANDATORY' and 'ISUNWANTED'.
+
+
+=head2 Precaching of software packages
+
+For large cluster systems support, it is possible to use a local area
+for pre-caching software packages. This is useful when planning for
+simultaneous massive software updates on a large amount of nodes. In
+this local cache, packages may be stored ahead by a system
+administrator. If the local cache is enabled, the SPMA looks up for
+each package to install, if it is found at the local cache
+directory. In this case, it will take the package from there;
+otherwise it will download it from the repository location. The local
+cache can be physically located on the node, but can be also a remote
+file system.
+
+There is currently no management of the local cache; packages have to
+be manually added (and removed after installation) from the package
+cache directory (see below).
+
+=item --localcache (yes/no)
+
+Enable the local package cache.
+
+=item --cachedir <directory>
+
+Directory where to find the package cache (has to exist).
+
+
+=head2 Using proxy servers
+
+In order to increase scalability, SPMA supports the usage of both
+<B>forward and <B>reverse proxy servers. A proxy server can be setup
+with eg. apache(1) or squid(1).
+
+Proxy servers can be used to build SWRep server hierarchies. It is
+possible to have a central set of (load-balanced) servers, and then
+per rack, to have a 'head' node which acts as proxy server for
+software downloads.
+
+SPMA supports having multiple proxy servers defined. It will select
+the first proxy server it finds available. If no proxy server is
+available, SPMA fails back to the standard software repository
+location.
+
+A <B>forward proxy server forwards connection requests via the proxy
+SWRep server to the origin server, naming the origin server as the
+target. SPMA will support forward proxies via the packager-specific
+tool (rpmt and pkgt). This is however currently not functional.
+
+A <B>reverse proxy server appears to the client as a standard SWRep
+server. The mapping onto the origin server is handled in an opaque
+way. SPMA supports reverse proxies by replacing the package URL with
+the reverse proxy server address (and port).
+
+=item --proxy <string> (yes|no)
+
+Activates the proxy selection.
+
+=item --proxytype <string> (forward|reverse)
+
+Selects the proxy type.
+
+=item --proxyhost <string> (swrep.quattor.org,123.124.125.126,myhost)
+
+List of IP addresses or DNS names of the proxy hosts, in selection
+order. Only used if proxy activated.
+
+=item --proxyport <integer> (optional)
+
+Port to use on the proxy host.
+
+=item --retries <n>
+
+try 'n' times if locked (another SPMA instance is running).
+
+=item --timeout <n>
+
+wait a maximum of 'n' seconds between retries.
+
+=item --ignorelock
+
+Ignore existing application lock. Use with care.
+
+=item --forcelock
+
+Take over application lock. Use with care.
+
+=head2 Other options
+
+=item --noaction
+
+Compute and show the operations, but do not execute them.
+
+=item --dbpath <package database directory>
+
+Passed to the RPM packager (I<rpmt>) to modify the default RPM
+database path. This option is only meaningful with RPM.
+
+=item --logfile <file>
+
+Store and append SPMA logs in <file>.
+
+=item --spmlist <file>
+
+This file is created and maintained by the SPMA, and contains the list
+of installed packages which are maintained by the SPMA. Do not modify
+this file by hand.
+
+
+=item --cfgfile <file>
+
+Use <file> for storing default options.
+
+=item --quiet
+
+Suppress application output to stdout.
+
+=item --verbose
+
+Verbose output.
+
+=item --debug <1..5>
+
+Set the debugging level to <1..5>.
+
+=item --root <directory>
+
+Change the root directory used for the installation.  Defaults to root
+of file system ("/").
+
+=item --rpmtpath <dir1[,dir2,...]>
+
+(RPM only) paths where to look for the B<rpmt> executable. Will take
+the first rpmt executable found in <dir1[,dir2,...]> (see rpmtexec
+parameter below)
+
+=item --rpmtexec <file1[,file2,...]>
+
+(RPM only) file names to look for the B<rpmt> executable (eg. 'rpmt', 'rpmt-py'), in search order.
+
+=item --checksig
+
+(RPM only) enforce package signature checking.
+
+=back
+
+=head2 Outputs
+
+The output generated by the packager when applying the operation set.
+
+Exit status returned -
+
+=over
+
+0 : When the packager returns a zero exit status. Indicates successful
+packager operation.
+
+1 : When the packager returns a non-zero exit status. Indicates
+packager failure.
+
+-1 :When the SPMA detected an error in the input or another
+ non-packager related error.
+
+=back
+
+=head2 Operations
+
+How packages are treated is determined by the following rules.
+
+=over 4
+
+=item *
+
+Packages flagged in the target configuration as ISMANDATORY are always installed.
+
+=item *
+
+Packages flagged in the target configuration as ISUNWANTED are always
+removed (if installed).
+
+=item *
+
+Packages not in the target configuration are deleted UNLESS "Allow
+User Packages" policy is enabled.
+
+=item *
+
+Packages which are not flagged as ISMANDATORY or ISUNWANTED in the target
+configuration will be installed unless "Priority to User Packages" is
+enabled and a package with the same name has already been installed by
+a user (not by the SPMA) or has previously been deleted not by the
+SPMA.
+
+=item *
+
+Subject to the above, if two Packages with the same name are currently
+installed on the machine they will be replaced by a single package
+with the same name if only one such is specified in the target
+configuration.
+
+=back
+
+The following behaviours also modify the operation of the SPMA
+
+=over 4
+
+=item *
+
+Packages currently installed on the machine not by the SPMA which
+appear in the target configuration when "Priority to User Packages" is
+not enabled will, for future operations, be considered to have been
+installed by the SPMA.
+
+=item *
+
+Packages installed on the machine before the first time the SPMA is
+invoked will not be considered to have been installed by the SPMA.
+
+=back
+
+=head1 CONFIGURATION FILE
+
+A configuration file can keep site-wide configuration settings. The
+location of the configuration file is defined in the --cfgfile
+option. A default configuration file is found in /etc/spma.conf.
+
+=head1 SIGNAL HANDLING
+
+If a signal is received, the SPMA will try to finish its execution
+gracefully and will report an error (return status: -1), except if
+it was called with the --noaction flag.
+
+=head1 KNOWN BUGS
+
+Currently, the proxy functionality has been verified only for
+HTTP. For FTP, it has not been tested. The proxy detection would need
+to be adapted for FTP.
+
+=head1 AUTHORS
+
+Ian Neilson and German Cancio
+Ian.Neilson@cern.ch, German.Cancio@cern.ch
+
+=head1 MAINTAINER
+
+German Cancio <German.Cancio@cern.ch>
+
+=head1 MORE INFORMATION
+
+quattor system management toolsuite:
+
+B<http://cern.ch/quattor>
+
+=cut
+
+
+#
+# Standard Common Application Framework beginning sequence
+#
+
+# verbose die
+#
+#use Carp;
+#$SIG{__DIE__} = sub { confess($_[0]) };
+
+#
+# Beginning sequence for EDG initialization
+#
+BEGIN {
+  # use perl libs in @QTTR_PERLLIB@
+  unshift(@INC, '@QTTR_PERLLIB@');
+  unshift(@INC,'/opt/edg/lib/perl');
+}
+
+
+#------------------------------------------------------------
+# Application
+#------------------------------------------------------------
+
+package SPMA;
+use CAF::Application;
+use LC::Exception qw (SUCCESS throw_error);
+use CAF::Reporter;
+use CAF::Lock qw(FORCE_IF_STALE FORCE_ALWAYS);
+use LWP::UserAgent;
+
+use strict;
+use vars qw(@ISA);
+
+@ISA= qw(CAF::Application CAF::Reporter);
+
+
+#------------------------------------------------------------
+# Public Methods/Functions for CAF
+#------------------------------------------------------------
+
+sub app_options {
+  #
+  # these options complement the ones defined in CAF::Application
+  #
+  push(my @array,
+
+       {NAME => 'packager=s',
+	HELP => 'system packager to be used (rpm,pkg)',
+	DEFAULT=>'rpm'},
+
+       {NAME =>'logfile=s',
+        HELP =>'path/filename to use for SPMA logs.',
+        DEFAULT=>'@QTTR_LOG@/spma.log'},
+
+       {NAME =>'cfgfile=s',
+	HELP =>'configuration file for SPMA defaults.',
+	DEFAULT=>'@QTTR_ETC@/spma.conf'},
+
+       {NAME =>'noaction',
+	HELP =>'do not actually perform operations.'},
+
+       {NAME =>'targetconf=s',
+	HELP =>'SPMA target configuration file.',
+	DEFAULT => '@QTTR_VAR@/lib/spma-target.cf'},
+
+       {NAME =>'userpkgs=s',
+	HELP =>'Allow user (== non-SPMA) installed packages',
+	DEFAULT =>'no'},
+
+       {NAME =>'userprio=s',
+	HELP =>'Give priority to user installed package versions in case of conflict',
+	DEFAULT =>'no'},
+
+       {NAME =>'usespmlist=s',
+	HELP =>'Allow SPMA to keep a list of owned packages (otherwise: all user packages)',
+	DEFAULT =>'yes'},
+
+
+       {NAME =>'dbpath=s',
+	HELP =>'path to RPM database (only meaningful for RPM)',
+	DEFAULT =>'/var/lib/rpm'},
+
+       {NAME =>'spmlist=s',
+	HELP =>'file to use for storing the SPMA managed package list.',
+	DEFAULT =>'@QTTR_VAR@/lib/spma-managed-packages'},
+
+       {NAME =>'localcache=s',
+	HELP => 'enable local cache for packages (yes/no)',
+	DEFAULT =>'no'},
+
+       {NAME =>'cachedir=s',
+	HELP => 'directory where to find the local cache for packages',
+	DEFAULT =>'@QTTR_VAR@/spma-cache/'},
+
+       {NAME =>'root=s',
+	HELP => 'root directory for installation'},
+
+       {NAME =>'rpmtpath=s',
+	HELP => '(RPM only) search directories for rpmt executable',
+	DEFAULT =>'/usr/bin,/usr/local/bin'},
+
+
+       {NAME =>'rpmtexec=s',
+	HELP => '(RPM only) names for rpmt executable',
+	DEFAULT =>'rpmt-py,rpmt'},
+
+       {NAME =>'rpmexclusive=s',
+	HELP => 'noop - kept for backwards compatibility',
+	DEFAULT =>undef},
+
+       {NAME =>'proxy=s',
+	HELP => 'Activates the proxy (yes/no)',
+	DEFAULT =>'no'},
+
+       {NAME =>'proxytype=s',
+	HELP => 'Proxy type selection (forward/reverse)',
+	DEFAULT =>'reverse'},
+
+       {NAME =>'proxyhost=s',
+	HELP => 'comma-separated list of IP addresses or DNS names of the proxy hosts',
+	DEFAULT =>undef},
+
+       {NAME =>'proxyport:i',
+	HELP => 'Port number on the proxy host'},
+
+       { NAME    => 'retries=i',
+         HELP    => 'number of retries if SPMA is locked',
+         DEFAULT => 10 },
+
+       { NAME    => 'timeout=i',
+         HELP    => 'maximum time in seconds between retries',
+         DEFAULT => 30 },
+
+       {NAME =>'ignorelock',
+	HELP =>'ignore application lock. Use with care.'},
+
+       {NAME =>'forcelock',
+	HELP =>'take over application lock. Use with care.'},
+
+       {NAME =>'checksig',
+	HELP =>'(rpm only) enforce package signature checking.'},
+
+       );
+
+
+  return \@array;
+}
+
+
+#
+# Other relevant methods
+#
+
+sub lock {
+  my $self=shift;
+  $self->{LOCK}=CAF::Lock->new('@QTTR_LOCKD@/spma');
+  my $lock_flag=FORCE_IF_STALE;
+  $lock_flag=FORCE_ALWAYS if ($self->option("forcelock"));
+  unless ($self->{LOCK}->set_lock($self->option("retries"),
+				  $self->option("timeout"),
+				  $lock_flag)) {
+    return undef;
+  }
+  return SUCCESS;
+}
+
+
+sub finish {
+  my ($self,$ret)=@_;
+  $self->{LOCK}->unlock() if ($self->{LOCK} && $self->{LOCK}->is_set());
+  exit ($ret);
+}
+
+
+#
+# initialize
+#
+
+sub _initialize {
+  my $self = shift;
+  #
+  # define application specific data.
+  #
+  #
+  # external version number
+  #
+  $self->{'VERSION'} ='@VERSION@';
+  #
+  # show setup text
+  #
+  $self->{'USAGE'} = "Usage: spma [options]\n";
+
+
+  # ensure allowed to run
+  if ($>) {
+    $self->error("Sorry, this program must be run by root");
+    exit(-1);
+  }
+
+  #
+  # log file policies
+  #
+  $self->{'LOG_APPEND'}=1; # append to logfile, do not truncate
+  $self->{'LOG_TSTAMP'}=1; # add time stamp before every entry in log
+  #
+  # start initialization of CAF::Application
+  #
+  unless ($self->SUPER::_initialize(@_)) {
+    return undef;
+  }
+
+  # start using log file (could be done later on instead)
+  # if not fake
+  $self->set_report_logfile($self->{'LOG'}) unless
+    $self->option('noaction');
+
+  return SUCCESS;
+}
+
+#
+# Service check
+#
+# Currently assumes that a HTTP web server is running on $host
+
+sub ServiceCheck {
+  my ($self,$host,$port)=@_;
+  my $ua = LWP::UserAgent->new(timeout => 90);
+  my $str='http://'.$host;
+  $str .= ':'.$port if defined $port;
+  my $response = $ua->get($str);
+  unless ($response->code() == 500) {
+    return SUCCESS;
+  } else {
+    $self->warn("server $str return code: ".$response->code());
+    return undef;
+  }
+}
+
+
+
+
+#############################################################
+# Main Program
+#############################################################
+
+package main;
+use LC::Exception qw (SUCCESS throw_error);
+use IO::Handle;
+use strict;
+use vars qw($this_app $self %SIG $DEBUG $exec_status $pkgobj $source);
+use POSIX qw(strftime);
+
+use SPM::RPMPkgr ();
+use SPM::SysVPkgr ();
+use SPM::Policy  ();
+use SPM::LocalList ();
+use SPM::PackageListFile ();
+
+
+
+# fix umask
+umask (022);
+# minimal Path
+$ENV{"PATH"} = "/bin:/sbin:/usr/bin:/usr/sbin";
+
+# unbuffer STDOUT & STDERR
+autoflush STDOUT 1;
+autoflush STDERR 1;
+
+
+# Temporary hack for exception reporting.
+# Set to zero to switch off exception reporting
+#
+$DEBUG = 1;
+
+
+
+
+#------------------------------------------------------------
+# Functions in the main program
+#------------------------------------------------------------
+
+sub signal_handler {
+  my $signal=shift;
+
+  # ignore further signals!!
+  $SIG{'INT'} ='IGNORE';
+  $SIG{'TERM'}='IGNORE';
+  $SIG{'QUIT'}='IGNORE';
+  $SIG{'USR2'}='IGNORE';
+  $SIG{'HUP'}='IGNORE';
+  $self->warn('signal handler: received signal: '.$signal);
+
+  unless ($this_app->option('noaction')) {
+    #
+    # handle the signal.
+    #
+    if (defined $exec_status && $exec_status >= 0) {
+      # packager has run: try to update the list.
+      # only if the packager was really invoked
+      $self->info('signal handler: saving installed pkg list...');
+      $source->merge_after( $pkgobj->get_installed_list() );
+    }
+    $self->error('SPMA exiting gracefully after signal hit.');
+    $this_app->finish(-1);
+  } else {
+    $this_app->finish(0);
+  }
+}
+
+
+#
+# Handle Exceptions here (temporary)
+#
+
+sub oops {
+    my $ec = shift;
+    my $er = shift;
+
+    $this_app->error($er->text());
+
+    $er->has_been_reported(1) unless $main::DEBUG == 1;
+
+    $this_app->finish(-1);
+}
+
+
+
+
+#------------------------------------------------------------
+# main loop
+#------------------------------------------------------------
+
+#
+# initialize the SPMA class (pointed to by $this_app)
+#
+unless ($this_app = SPMA->new($0,@ARGV)) {
+  throw_error("cannot start application");
+}
+
+$self=$this_app;
+
+# ensure allowed to run
+if ($>) {
+  $this_app->error("Sorry ".$this_app->username().
+                   ", this program must be run by root");
+  $this_app->finish(-1);
+}
+
+
+# Set up an error handler
+
+my $ec = LC::Exception::Context->new()->error_handler(\&oops);
+
+
+# post-update managed list needed? (see signal_handler)
+
+$exec_status=undef;
+$source=undef;
+$pkgobj=undef;
+
+
+#
+# Handle signals properly
+#
+$SIG{'INT'} =\&signal_handler;
+$SIG{'TERM'}=\&signal_handler;
+$SIG{'QUIT'}=\&signal_handler;
+$SIG{'USR2'}=\&signal_handler;
+$SIG{'HUP'}='IGNORE';
+
+
+
+#
+# process command line options before proceeding.
+#
+
+
+# Consistency check for userpkgs and userprio
+#
+# the following check should be handled at some point
+# directly by the CAF:: framework (stricter option checking)
+unless ($this_app->option('userpkgs') =~ m%^(yes|no)$%) {
+  $self->error('bad value for userpkgs option: '.
+	       $this_app->option('userpkgs'));
+  $this_app->finish(-1);
+}
+unless ($this_app->option('userprio') =~ m%^(yes|no)$%) {
+  $self->error('bad value for userprio option: '.
+	       $this_app->option('userprio'));
+  $this_app->finish(-1);
+}
+
+unless ($this_app->option('usespmlist') =~ m%^(yes|no)$%) {
+  $self->error('bad value for usespmlist option: '.
+	       $this_app->option('usespmlist'));
+  $this_app->finish(-1);
+}
+
+unless (chdir('/')) {
+  $this_app->error("Can't chdir to '/' : $!");
+  $this_app->finish(-1);
+}
+
+
+
+my $userpkgs=0;
+$userpkgs=1 if ($this_app->option('userpkgs') eq 'yes');
+my $userprio=0;
+$userprio=1 if ($this_app->option('userprio') eq 'yes');
+my $usespmlist=0;
+$usespmlist=1 if ($this_app->option('usespmlist') eq 'yes');
+
+
+if (($userprio && !$userpkgs)) {
+  $self->error("Inconsistent options: \
+ Cannot have 'userprio' without 'userpkgs' enabled.");
+  $this_app->finish(-1);
+}
+
+if ((!$usespmlist && !$userpkgs)) {
+  $self->error("Inconsistent options: \
+ Cannot have 'usespmlist' to 'no' without 'userpkgs' enabled.");
+  $this_app->finish(-1);
+}
+
+
+
+unless (-r $this_app->option('targetconf')) {
+  $self->error("Cannot read target configuration file : ",
+	       $this_app->option('targetconf'));
+  $this_app->finish(-1);
+}
+
+# Check that the root directory exists and is really a directory.
+if ($this_app->option('root')) {
+    unless (-e $this_app->option('root')) {
+	$self->error("Bad option: root directory (" .
+		     $this_app->option('root') . ") does not exist");
+	$this_app->finish(-1);
+    }
+    unless (-d $this_app->option('root')) {
+	$self->error("Bad option: root (" .
+		     $this_app->option('root') . ") is not directory");
+	$this_app->finish(-1);
+    }
+}
+
+my $testing=0;
+$testing=1 if ($this_app->option('noaction'));
+
+#
+# local package cache handling
+#
+my $cachepath=undef;
+if ($this_app->option('localcache') eq 'yes') {
+  $cachepath=$this_app->option('cachedir');
+  unless (-d $cachepath) {
+    $self->error("Local cache enabled but cache dir does not exist: ".$cachepath);
+    $this_app->finish(-1);
+  }
+}
+
+my $dbpath;
+my $packager=$this_app->option('packager');
+
+if ($packager eq 'rpm') {
+  #
+  # rpm packager specific options
+  #
+  $dbpath=$this_app->option('dbpath');
+  unless (-d $dbpath) {
+    $self->error("RPM database directory does not exist: ".$dbpath);
+    $this_app->finish(-1);
+  }
+  if ($this_app->option('rpmexclusive')) {
+    $self->warn("legacy option, ignoring: rpmexclusive");
+  }
+
+} elsif ($packager eq 'pkg') {
+  #
+  # pkg packager specific options
+  #
+} else {
+  #
+  # handle other packager specific options
+  # (currently: none)
+  #
+  $self->error('the following packager is not supported: ',
+	       $this_app->option('packager'));
+  $this_app->finish(-1);
+}
+
+$self->log('-----------------------------------------------------'); 
+$self->info('SPMA version '. $self->version().' started by '.
+	    $self->username() .' at: '.scalar(localtime));
+
+$self->info('Dry run, no changes will be performed (--noaction flag set)')
+  if ($self->option('noaction'));
+
+$self->verbose('checking for SPMA locks...');
+unless ($this_app->option("ignorelock")) {
+  unless ($this_app->lock()) {
+    $this_app->finish(-1);
+  }
+}
+
+
+$self->verbose('using packager: '.$packager);
+$self->verbose('target package list: '.$self->option('targetconf'));
+$self->verbose('user packages allowed: '.$userpkgs);
+$self->verbose('priority to user pkgs: '.$userprio);
+$self->verbose('spma using a list of own pkgs: '.$usespmlist);
+$self->verbose('file for SPMA managed pkgs list: '.
+	       $self->option('spmlist'));
+
+$self->info("using local package cache in: ".$cachepath)
+  if (defined $cachepath);
+
+
+my $proxytype=undef;
+my $proxyport=undef;
+my $proxyhost=undef;
+if ($this_app->option('proxy') eq 'yes') {
+  $proxytype=$this_app->option('proxytype');
+  my $proxyhostlist=$this_app->option('proxyhost');
+  unless (defined $proxyhostlist) {
+    $self->warn('proxy activated but no proxy server defined, ignoring');
+  } else {
+    $proxyport=$this_app->option('proxyport');
+    if ($proxytype =~ /^(forward|reverse)$/) {
+      $self->info('proxy server activated, type: ',
+		  $proxytype);
+      $self->report('        proxy server(s): '.$proxyhostlist);
+      if (defined $proxyport) {
+	$self->report('        proxy port is: '.$proxyport);
+      }
+    } else {
+      $self->error('proxytype has to be "forward" or "reverse"');
+      $this_app->finish(-1);
+    }
+    my $i;
+    my $found=0;
+    foreach $i (split /,/,$proxyhostlist) {
+      if ($self->ServiceCheck($i,$proxyport)) {
+	$proxyhost=$i;
+	$self->info('active proxy found: '.$proxyhost);
+	$found++;
+      } else {
+	$self->warn('proxy host '.$i.' not responding');
+      }
+    }
+    unless ($found) {
+      $self->warn('no active proxy server found in '.$proxyhostlist.' - falling back to default server');
+      $proxytype=undef;
+    }
+  }
+}
+else {
+  $self->info('proxy server not activated');
+}
+
+
+
+#
+# Select the Packager
+#
+
+
+if ($packager eq 'rpm') {
+  $pkgobj = SPM::RPMPkgr->new($cachepath,$proxytype,$proxyhost,$proxyport,$this_app->option('dbpath'),$testing);
+} elsif ($packager eq 'pkg') {
+  $pkgobj = SPM::SysVPkgr->new($cachepath,$proxytype,$proxyhost,$proxyport,$this_app->option('dbpath'),$testing);
+}
+
+#
+# Instantiate the policy object with the (allow user packages,
+# priority to user packages) tuple.
+#
+
+my $policy = SPM::Policy->new($userpkgs,$userprio);
+
+#
+# Find out what has already been done
+#
+
+$self->info('examining local installations..');
+
+
+#
+# get $source: list of (previously) installed packages managed by the SPMA
+#
+
+$source = SPM::LocalList->new($this_app->option('spmlist'),$testing,$usespmlist);
+
+#
+# now, *update* the list of installed packages managed by the SPMA
+# according to the currently installed packages. An user may
+# have added or removed packages since the last run.
+# $source will contain now the *COMPLETE* list of packages,
+# both 'local user installed' and 'SPMA installed' ones.
+#
+$source->merge_before( $pkgobj->get_installed_list() );
+#
+# note that merge_before also saves the updated list of SPMA installed
+# packages back to the local packages list file.
+
+
+#
+# Instantiate target configuration object (file in --targetconf).
+#
+
+my $desired =  SPM::PackageListFile->new($this_app->option('targetconf'));
+
+#
+# $desired->read() reads in the target configuration.
+#
+
+$self->info('reading target configuration ..');
+
+my $desired_array = $desired->read();
+
+#
+#
+if (!$userpkgs && !scalar @{$desired_array}) {
+  $self->error('empty target list in file: ',
+	       $this_app->option('targetconf'),
+	      " not allowed when 'userpkgs=no'");
+  $this_app->finish(-1);
+}
+
+#
+# Now, remove ISLOCAL attribute from $source on all pkgs which appear
+# in the $desired_array. This means that locally installed packages
+# which do also appear in the desired list will be considered to be
+# managed by the SPMA.
+
+$source->change_control($desired_array);
+
+# Note that Source->change_control saves the SPMA managed list again
+# to the file.
+
+#
+# Now, we have in $source->get_list() and $desired_array the whole
+# list of packages which are installed ($source) and the ones which
+# should be installed ($desired).
+
+# Go and find out what the operations are to bring $source to
+# $desired, according to the policies defined in the $policy object.
+# (The $policy object will filter out / transform operations for this)
+#
+# Then, call the underlying transactional packager (eg. rpmt, pkgt)
+# to execute the operations.
+#
+
+$self->info('executing operations..');
+
+$exec_status = $pkgobj->execute($source->get_list(),
+				  $desired_array,
+				  $policy);
+
+#
+# The packager (rpmt, pkgt) has run either run or not,
+# and in case it ran, succesfully or not.
+# If it didn't run, don't do anything.
+#
+# If it did run, the list of local packages may have changed (as a
+# operation list may fail in the middle - there is only rollback in
+# rpmt at the operation level, but not at the transaction level). In
+# this case, inspect which packages have been added/removed/upgraded,
+# and update the $source list accordingly.
+
+unless ($exec_status < 0) {
+    # only if the packager was really invoked
+    $source->merge_after( $pkgobj->get_installed_list() );
+}
+
+#
+# All done.
+#
+
+$self->log ('finishing with exit status: '.$exec_status);
+
+if ($exec_status) {
+  $self->error('SPMA finished. with exit status '.$exec_status);
+} else {
+  $self->OK('SPMA finished successfully.');
+}
+
+$this_app->finish($exec_status);
+
+
+
+
+

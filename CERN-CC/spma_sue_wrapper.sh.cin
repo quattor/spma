@@ -1,0 +1,29 @@
+#!/bin/bash
+
+[ -e /etc/nospma ] && exit
+
+if [ "$1" = "spma_sue" ]
+then
+   shift
+   [ "$NOTD_EXEC_TODO" != 'boot' ] && sleep `/usr/sbin/wait2run 360`
+fi
+
+# add /usr/local/lib to ld.so.conf if not already present
+# (tmp fix)
+
+line=`grep /usr/local/lib /etc/ld.so.conf`
+if [ -z "$line" ]; then 
+    echo "/usr/local/lib" >> /etc/ld.so.conf
+fi 
+
+# run it
+#
+@QTTR_SBIN@/edg-ccm-fetch && \
+@QTTR_SBIN@/ncm-ncd --configure spma && \
+@QTTR_BIN@/spma && \
+/usr/sue/etc/sue.update $*
+
+# run ldconfig for renegate ASIS pkgs
+#
+
+/sbin/ldconfig

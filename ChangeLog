@@ -1,0 +1,517 @@
+2008-09-21  Ulrich Schwickerath
+	
+	* Release: 1.10.33
+	- replaced obsolete regis01 server in notd configuration CERN-CC parts
+
+2008-07-17  German Cancio Melia
+
+	* Release: 1.10.32
+	- Small fix on last fix (only report error if some produced)
+
+2008-07-17  German Cancio Melia
+
+	* Release: 1.10.31
+	- Tolerate warning messages in the rpm query, without stopping execution, unless rc<>0
+
+2007-12-06  Marco Emilio Poleggi,<Marco.Poleggi@cern.ch>
+
+	* Release: 1.10.30
+	- SPM/RPMPkgr, SPM/Policy: Previous change rolled back, since the issue 
+	with CAF::Reporter is better solved by the last patch in CAF::Object 
+	(rel. 1.4.15)
+
+2007-12-05  Marco Emilio Poleggi,<Marco.Poleggi@cern.ch>
+
+	* Release: 1.10.29
+	- SPM/RPMPkgr, SPM/Policy: now correctly initialize the reporter object
+	- Makefile: clean target is now working; no more annoying echoing
+
+2007-11-09  German Cancio Melia
+
+	* Release: 1.10.28
+	- change requires to rpmt-py instead of rpmt which is obsolete
+
+2007-10-15  German Cancio Melia
+
+	* Release: 1.10.27
+	- Catch CPIO errors reported to STDERR and flag them as rpmt errors
+
+2007-08-02  German Cancio Melia
+
+	* Release: 1.10.26
+	- Do not log when in --noaction mode to spma log file
+
+2007-06-11  German Cancio Melia
+
+	* Release: 1.10.25
+	- Include new error assertion verification after running rpmt
+	CERN-CC: Add running grub after execution of spma in spma_wrapper.sh
+
+2007-02-28  German Cancio Melia
+
+	* Release: 1.10.24
+	- Log ccm-fetch information into log file; have ncm_spma_wrapper accepting arguments (components to run)
+
+2007-01-11  German Cancio Melia
+
+	* Release: 1.10.23
+	- Added support for checking RPM signatures (new cfg option)
+
+2006-11-27  German Cancio Melia
+
+	* Release: 1.10.22
+	- User friendly message telling a non-root user to go away
+
+2006-09-25  German Cancio Melia
+
+        * Release: 1.10.21
+        - Intercept all keyboard signals during rpmt execution (and ignore them), more verbose error return message
+
+2006-08-02  German Cancio Melia
+
+        * Release: 1.10.20
+        - Time out only after 24h
+
+2006-08-02  German Cancio Melia
+
+        * Release: 1.10.19
+        - Just to be *completely* paranoiac: disallow *any* combination of simultaneous invocations, whatever the flags are, by locking also when spma is invoked in --noaction mode!
+
+2006-08-02  German Cancio Melia
+
+        * Release: 1.10.18
+        - spma now will exit if a lock is found even if running in --noaction mode
+
+2006-07-28  German Cancio Melia
+
+        * Release: 1.10.17
+        - Fix bug #18480 - each architecture is now treated separatedly when dealing with replace operations
+
+2006-07-19  German Cancio Melia
+
+        * Release: 1.10.16
+        - Changed error message when decoding spma package input file (Savannah #18281)
+
+2006-02-10  German Cancio Melia
+
+        * Release: 1.10.15
+        - Fix bug #14876 - wrong regexp in SPMA gpg-pubkey package identification
+
+2005-10-25  German Cancio Melia
+
+        * Release: 1.10.14
+        - SPMA now skips RPM public keys (RPMPkgr.pm) and will not treat them as packages
+
+2005-09-21  German Cancio Melia
+
+        * Release: 1.10.13
+        - Fix for the fix in forward proxy ;-(
+
+2005-09-21  German Cancio Melia
+
+        * Release: 1.10.12
+        - Fix bug in forward proxy handling (port number wrong)
+
+2005-08-16  Juan Antonio Lopez Perez <Juan.Lopez.Perez@cern.ch>
+
+        * Release: 1.10.11
+	- Changed the 'cp' command in the Makefile by the $(COPY) variable
+	defined in the quattor-build-tools. In Solaris cp have different
+	options and syntax so we have to use 'gcp'.
+
+2005-08-10  Philippe Defert CERN/CN
+
+        * Release: 1.10.10
+        - Corrected call to pkgt with --debu[3~[D[D
+
+2005-08-10  Philippe Defert CERN/CN
+
+        * Release: 1.10.9
+        - Forgot to put Package.pm.cin modification in the last release.
+
+2005-08-10  Philippe Defert CERN/CN
+
+        * Release: 1.10.8
+        - Improved SysVPkgr.pm performance using pkginfo intead od pkginfo -l. Corrected a bug in Package.pm in the new method with args to handle correctly a release '0'.
+
+2005-07-27  German Cancio Melia
+
+        * Release: 1.10.7
+        - SPMA now prepared for new rpmt-py, will pick it if available
+
+2005-07-03  German Cancio Melia
+
+        * Release: 1.10.6
+        - Fix Savannah #9312 by producing error status as defined in manpage
+
+2005-05-31  German Cancio Melia
+
+        * Release: 1.10.5
+        - Small fix in CERN-CC package specfile declaration
+
+2005-05-13  German Cancio Melia
+
+        * Release: 1.10.4
+        - RPMPkgr.pm: Generalized RPMIO internal error catching (assertion fd && fd->magic..) which indicates a general RPM failure
+
+2005-05-11  German Cancio Melia
+
+        * Release: 1.10.3
+        - increased logrotate to monthly log rotation. CERN-CC only: splitted up notd config file into separated ones for spma and spma_ncm
+
+2005-05-11  German Cancio Melia
+
+        * Release: 1.10.2
+        - more verbose error reporting in case of RPM query errors
+
+2005-05-07  German Cancio Melia
+
+        * Release: 1.10.1
+        - Added --forcelock and --ignorelock options for better disaster recovery
+
+2005-05-06  German Cancio Melia
+
+        * Release: 1.10.0
+        - Bumped minorversion
+
+2005-05-06  German Cancio Melia
+
+        * Release: 1.9.21
+        - Fix for Savannah  #3180: SPMA supports now CAF::Lock and implements locking
+
+2005-05-03  German Cancio Melia
+
+        * Release: 1.9.20
+        - Re-enabling legacy rpmexclusive option (noop, but avoids to break config files)
+
+2005-04-22  German Cancio Melia
+
+        * Release: 1.9.19
+        - RPMPkgr: Added in 'erase' operations the architecture for newer RPM versions (4.2.X). Removed the 'rpmexclusive' option as now auto detected
+
+2005-01-09  German CANCIO MELIA
+
+        * Release: 1.9.18
+        - Fixed edg-ccm-fetch -> ccm-fetch
+
+2004-12-03  German CANCIO MELIA
+
+        * Release: 1.9.17
+        - Added obsoletes for edg-spma
+
+2004-10-28  Rafael Garcia Leiva
+
+        * Release: 1.9.16
+        - RPM name changed, RPM dependencies fixed
+
+2004-10-06  German CANCIO MELIA
+
+        * Release: 1.9.15
+        - Removed '--percent' flag when using rpmt as not supported by new rpmt
+
+2004-09-02  German CANCIO MELIA
+
+        * Release: 1.9.14
+        - Minor bugfixes
+
+2004-05-14  German CANCIO MELIA
+
+        * Release: 1.9.12
+        - Added new RPM error string (savannah #3352)
+
+2004-04-08  German CANCIO MELIA
+
+        * Release: 1.9.11
+        - Replaced hardcoded Perl interpreter with @PERL_EXECUTABLE@ for improved portability
+
+2004-03-30  German Cancio Melia
+
+        * Release: 1.9.10
+        - removed old ASIS compatibility stuff from wrappers
+
+2004-03-30  German Cancio Melia
+
+        * Release: 1.9.9
+        - Moved spma wrapper scripts to core SPMA RPM as generic
+
+2004-03-26  German CANCIO MELIA
+
+        * Release: 1.9.8
+        - typo fixed succes(s)fully :-)
+
+2004-03-16  German Cancio Melia
+
+        * Release: 1.9.7
+        - Now spma.conf is %config(noreplace) - central changes need to be done with NCM spma component
+
+2004-03-15  German Cancio Melia
+
+        * Release: 1.9.6
+        - Add fetch to wrapper scriptlets; isolate SUE wrapper
+
+2004-03-15  German Cancio Melia
+
+        * Release: 1.9.5
+        - Do not shoot down other rpm access utils by edfault
+
+2004-03-15  German Cancio Melia
+
+        * Release: 1.9.4
+        - Removed dependencies on CCConfig as CERN specific
+
+2004-03-08  German CANCIO MELIA
+
+        * Release: 1.9.3
+        - Uses now SBIN and '--all' for NCM invocation
+
+2004-02-18  German CANCIO MELIA
+
+        * Release: 1.9.2
+        - Make spma.conf belong to the standard RPM; set default 'userpkgs' to 'no'
+
+2004-02-17  German CANCIO MELIA
+
+        * Release: 1.9.1
+        - Added functionality for multiple proxies
+
+2004-02-16  German CANCIO MELIA
+
+        * Release: 1.9.0
+
+2004-02-16  German CANCIO MELIA
+
+        * Release: 1.8.4
+        - Added new proxy functionality: forward and reverse proxy options
+
+2004-02-11  German CANCIO MELIA
+
+        * Release: 1.8.3
+        - Added some documentation on the SPMA package cache
+
+2004-02-03  German CANCIO MELIA
+
+        * Release: 1.8.2
+        -  SPMA now builds as 'noarch' rpm (bugzilla #2524)
+
+2004-02-02  German CANCIO MELIA
+
+        * Release: 1.8.1
+        - increased timeouts to 20min (rpm list) and 10min (lsof)
+
+2004-02-02  German CANCIO MELIA
+
+        * Release: 1.8.0
+        - Added 'rpmtpath' option;
+        - Added 'root' prefix option (thanks to C.Loomis); 
+        - issues now warning instead of error if LSOF times out; 
+        - improved exception handler in RPMPkgr
+
+2004-01-27  German CANCIO MELIA
+
+        * Release: 1.7.4
+        - remove dependency on ASIS packaged version of rpmt
+
+2004-01-13  German CANCIO MELIA
+
+        * Release: 1.7.3
+        - bugfix in regexp for RPMT 'assertion failed' error
+
+2004-01-10  German CANCIO MELIA
+
+        * Release: 1.7.2
+        - Reduce time window where rpm (<4.1) read processes may block. (bugzilla 2332). 
+        - Workaround not neccessary for rpm 4.1 and later, as fixed there.
+        - Implemented timeout for lsof when looking for concurrent rpmdb access.
+
+2004-01-10  German CANCIO MELIA
+
+        * Release: 1.7.1
+        - Workaround for recognizing silent rpmt errors (bugzilla #2393).
+
+2003-10-13  Juan Manuel PELEGRIN CARCELEN
+
+        * Release: 1.6.7
+        - update SysVPkgr.pm to set RELEASE to 0 when not properly defined
+
+2003-09-18  Juan Manuel PELEGRIN CARCELEN
+
+        * Release: 1.6.6
+        - update SysVPkgr.pm to accept the 'debug' flag
+
+2003-09-10  German CANCIO MELIA
+
+        * Release: 1.6.5
+        - Added CERN-CC Requires: to ensure compatibility with SPMA version
+
+2003-09-01  German CANCIO MELIA
+
+        * Release: 1.6.3
+        - small typo in documentation fixed - SPMA now accepts PKG ;-)
+
+2003-09-01  German CANCIO MELIA
+
+        * Release: 1.6.0
+        - Added PKG (Sys V packages for Solaris) support - new SysVPkgr.pm
+
+2003-09-01  German CANCIO MELIA
+
+        * Release: 1.5.11
+        - small enhancement in documentation
+
+2003-08-29  German CANCIO MELIA
+
+        * Release: 1.5.10
+        - fixed (noreplace) attribute in %config
+
+2003-08-27  German CANCIO MELIA
+
+        * Release: 1.5.8
+        - owns now %doc directory
+
+2003-08-27 CVS: new release (gcancio)
+
+        * Release: 1.5.6
+        - added notd entries (CERN-CC) for NCM; removed hardcoded paths in CERN-CC (for Solaris portability)
+
+2003-08-27 CVS: new release (gcancio)
+
+        * Release: 1.5.5
+        - inform now if package is found and taken from preload cache
+
+2003-08-25 CVS: new release (gcancio)
+
+        * Release: 1.5.4
+        - make all directories relative to quattor build time directives
+
+2003-08-25 CVS: new release (gcancio)
+
+        * Release: 1.5.3
+        - check for right user id, enable SPMA cache (CERN-CC)
+
+2003-08-22 CVS: new release (gcancio)
+
+        * Release: 1.5.1
+        - use gzip -f 
+
+2003-08-22 CVS: new release (gcancio)
+
+        * Release: 1.5.0
+        - Cleanup and polish port to new Quattor build tools
+
+2003-08-22 CVS: new release (gcancio)
+
+        * Release: 1.4.1
+        - minor fixes related to quattor build tools porting
+
+
+2003-08-22  German CANCIO MELIA  <gcancio@asis-w6.cern.ch>
+
+	* make documentation installed in right path (EDG/LSB)
+
+2003-08-22  German CANCIO MELIA  <gcancio@asis-w6.cern.ch>
+
+	* CERN-CC: CCConfig does now take care of unescaping()
+
+2003-08-21  German CANCIO MELIA  <gcancio@asis-w6.cern.ch>
+
+	* ported to new quattor build tools
+
+2003-08-19  German CANCIO MELIA  <gcancio@asis-w6.cern.ch>
+
+	* removed spma_generator as now a NCM component
+
+	* updated the spma CCConfig generator: more verbose
+	  info, does not overwrite previous target file in case
+	  of failures.
+
+2003-08-18  German CANCIO MELIA  <gcancio@asis-w6.cern.ch>
+
+	* ensure that run with right (root) credentials
+
+	* new edg-perl-LC numbering scheme, change specfile deps
+
+2003-08-15  German CANCIO MELIA  <gcancio@asis-w6.cern.ch>
+
+	* CERN-CC: don't run wrapper if /etc/nospma exists
+
+2003-07-30  German CANCIO MELIA  <gcancio@asis-w6.cern.ch>
+
+	* add spma.conf as example in %doc
+
+2003-06-06  German CANCIO MELIA  <gcancio@asis-w6.cern.ch>
+
+	* CERN-CC-spmaconf: don't wait2run if node booting
+
+2003-05-30  German CANCIO MELIA  <gcancio@asis-w6.cern.ch>
+
+	* small bugfix in replace algorithm
+	
+2003-04-09  German CANCIO MELIA  <gcancio@asis-w6.cern.ch>
+
+	* SPMA refuses to accept an empty target list when
+	  userpkgs=no (as it would mean erasing all pkgs)
+
+2003-04-07  German CANCIO MELIA  <gcancio@asis-w6.cern.ch>
+
+	* new option for SPMA to not keep any 'owned packages'
+	  list. All packages can be considered as 'user' pkgs.
+	  SPMA can thus be used for only updating packages
+	  (and explicitly deleting them with ISUNWANTED). 
+
+	* allow to wildcard in ISUNWANTED also the architecture.
+
+	* small bugfix (compare arch)
+
+2003-03-27  German CANCIO MELIA  <gcancio@asis-w6.cern.ch>
+
+	* added logrotate.d file entry.
+
+2003-03-26  German CANCIO MELIA  <gcancio@asis-w6.cern.ch>
+
+	* added process termination if rpmlib is blocked.
+	  (rpmexclusive flag)
+
+2003-03-21  German CANCIO MELIA  <gcancio@asis-w6.cern.ch>
+
+	* added spma_configgen: DEMO SPMA config file generator.
+
+	* bugfix: indicate release name when removing packages
+	          in RPMPkgr
+
+2003-02-12  German CANCIO MELIA  <gcancio@asis-w6.cern.ch>
+
+	* updated for edg-caf-perl 0.1.9 (conffile -> cfgfile)
+
+2003-02-07  German CANCIO MELIA  <gcancio@asis-w6.cern.ch>
+
+        * Added support for local caches (for large cluster
+	  upgrade support)
+	
+        * Added configuration file handling for SPMA, and
+	  default (void) config file.
+
+	* Policy change: do not allow users to mark SPMA packages as
+	UNWANTED (by deleting them manually between SPMA runs). It makes
+	the code more complex and error recovery is much more
+	difficult. Thus, these packages will be marked as 'non existing'
+	and will be reinstalled by the SPMA if they are on the target
+	configuration.
+
+	* Improved signal handler.
+	
+2003-02-06  German CANCIO MELIA  <gcancio@asis-w6.cern.ch>
+	
+	* ported to CAF:: framework:
+	  - changed options
+	  - changed default config file locations
+	  - changed reporting
+	  - added log file handling
+	  - etc.
+	* changes in new() methods in some (most) classes.
+
+	* rudimentary signal handler added.
+
+2003-02-05  German CANCIO MELIA  <gcancio@asis-w6.cern.ch>
+
+	* added ChangeLog file.
+

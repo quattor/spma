@@ -1,0 +1,20 @@
+#!/bin/bash
+
+
+[ -e /etc/nospma ] && exit
+
+if [ "$1" = "spma" ]
+then
+   shift
+   [ "$NOTD_EXEC_TODO" != 'boot' ] && perl -e 'sleep rand 360'
+fi
+
+# run fetch, ncm-spma, SPMA, ncm-grub
+#
+
+@QTTR_SBIN@/ccm-fetch >>@QTTR_LOG@/ccm-fetch.log && \
+@QTTR_SBIN@/ncm-ncd --configure spma && \
+@QTTR_BIN@/spma $* && \
+@QTTR_SBIN@/ncm-ncd --configure grub
+
+

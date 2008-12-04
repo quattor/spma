@@ -1,0 +1,158 @@
+#!/bin/tcsh
+#
+alias rpm  rpm  --dbpath `pwd`/RPMDB
+alias spma spma --dbpath `pwd`/RPMDB
+#
+if (-d RPMDB) then
+	rm -rf RPMDB
+endif
+#
+mkdir RPMDB
+rpm --initdb 
+rm -f spmlist
+rm -f desiredlist 
+rm -f policyconfig
+#
+echo "### ### ### ### ### ### ### ### ### ### ### ### ### ### "
+echo "### Default policy - user packages allowed but no priority"
+cat <<EOF >policyconfig
+allowuserpackages
+EOF
+#------------------------------------------------------------------------
+echo "### Basic install..."
+#
+cat <<EOF >desiredlist
+/usr/src/redhat/RPMS/i386 spma-test-A 0 1 i386
+EOF
+#
+spma 
+#
+if (`rpm -qa | grep -c 'spma-test-A-0-1'` != 1) then
+	echo Failed to install spma-test-A-1-1
+	goto cleanup
+endif 
+#
+if (`rpm -qa | grep -c 'spma-test-A'` != 1) then
+	echo Detected more than one A package after upgrade
+	goto cleanup
+endif
+#
+if (`grep -c 'spma-test-A 0 1 i386' spmlist` != 1) then
+	echo Failed to update spmlist
+	goto cleanup
+endif
+#
+#------------------------------------------------------------------------
+echo "### Two versions..."
+cat <<EOF >>desiredlist
+/usr/src/redhat/RPMS/i386 spma-test-A 1 1 i386
+/usr/src/redhat/RPMS/i386 spma-test-A 0 1 i386
+EOF
+#
+spma
+#
+if (`rpm -qa | grep -c 'spma-test-A'` != 2) then
+        echo Failed to install spma-test-A-1-1
+        goto cleanup
+endif
+#
+if (`grep -c 'spma-test-A' spmlist` != 2) then
+        echo Failed to update spmlist
+        goto cleanup
+endif
+#
+#------------------------------------------------------------------------
+echo "### Back to one"
+rm -f desiredlist 
+cat <<EOF >desiredlist
+/usr/src/redhat/RPMS/i386 spma-test-A 1 1 i386
+EOF
+#
+spma
+#
+if (`rpm -qa | grep -c 'spma-test-A-0-1'` != 0) then
+        echo Failed to remove spma-test-A-0-1
+        goto cleanup
+endif
+#
+if (`rpm -qa | grep -c 'spma-test-A-1-1'` != 1) then
+        echo Failed to install spma-test-A-1-1
+        goto cleanup
+endif
+#
+if (`grep -c 'spma-test-A 1 1 i386' spmlist` != 1) then
+        echo Failed to update spmlist after removing package
+        goto cleanup
+endif
+#
+if (`grep -c 'spma-test-A' spmlist` != 1) then
+        echo Failed to update spmlist
+        goto cleanup
+endif
+#
+#------------------------------------------------------------------------
+echo "### User now add package B and we also upgrade A"
+rpm -i /usr/src/redhat/RPMS/i386/spma-test-B-0-1.i386.rpm
+#
+rm -f desiredlist
+cat <<EOF >desiredlist
+/usr/src/redhat/RPMS/i386 spma-test-A 2 1 i386
+EOF
+#
+spma
+#
+if (`rpm -qa | grep -c 'spma-test-A-1-1'` != 0) then
+        echo Failed to remove spma-test-A-1-1
+
+        goto cleanup
+endif
+#
+if (`rpm -qa | grep -c 'spma-test-A-2-1'` != 1) then
+        echo Failed to install spma-test-A-2-1
+        goto cleanup
+endif
+#
+if (`rpm -qa | grep -c 'spma-test-B-0-1'` != 1) then
+        echo Failed to leave spma-test-B-0-1
+        goto cleanup
+endif
+#
+#------------------------------------------------------------------------
+echo "### User now installs older A check we upgrade again"
+rpm -U --oldpackage /usr/src/redhat/RPMS/i386/spma-test-A-1-1.i386.rpm
+#
+spma
+#
+if (`rpm -qa | grep -c 'spma-test-A-2-1'` != 1) then
+        echo Failed upgrade to spma-test-A-2-1
+        goto cleanup
+endif
+#
+#------------------------------------------------------------------------
+echo "### Wildcard unwanted B packages"
+#
+rm -f desiredlist
+cat <<EOF >desiredlist
+/usr/src/redhat/RPMS/i386 spma-test-A 1 1 i386
+/usr/src/redhat/RPMS/i386 spma-test-B * * i386 ISUNWANTED
+EOF
+#
+rpm -i /usr/src/redhat/RPMS/i386/spma-test-B-0-1.i386.rpm
+rpm -i /usr/src/redhat/RPMS/i386/spma-test-B-1-1.i386.rpm
+#
+spma
+#
+if (`rpm -qa | grep -c 'spma-test-B-'` != 0) then
+        echo Failed to remove multiple spma-test-Bs
+        goto cleanup
+endif
+#
+if (`grep -c 'spma-test-B' spmlist` != 0) then
+    echo Failed to cull unwanted target packages from spmlist
+    goto cleanup
+endif
+#------------------------------------------------------------------------
+cleanup:
+echo ### Cleaning up.
+rpm -e --allmatches spma-test-A spma-test-B >& /dev/null
+rm -f spmlist desiredlist rpmtops policyconfig
