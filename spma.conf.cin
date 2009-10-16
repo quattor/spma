@@ -21,6 +21,9 @@
 #   (can be set to 'no' only if userpkgs=yes)
 #usespmlist = yes
 
+# * do we protect the currently-running kernel against removal
+#kernelprotect = yes
+
 #-------------------------------------------------------
 
 # * Local cache:

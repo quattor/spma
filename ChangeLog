@@ -1,3 +1,8 @@
+2009-10-16  Jan IVEN
+
+	* Release: 1.10.34
+	- implement "protectkernel" option (#49733), some more debug output
+
 2008-09-21  Ulrich Schwickerath
 	
 	* Release: 1.10.33

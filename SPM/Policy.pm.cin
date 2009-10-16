@@ -46,7 +46,7 @@ use vars qw(@ISA $VERSION);
 use File::stat;
 use LC::Exception qw(SUCCESS throw_error);
 use LC::File      qw(file_contents);
-
+use LC::Sysinfo;
 
 use CAF::Object;
 use CAF::Reporter;
@@ -62,7 +62,7 @@ $VERSION = 1.00;
 
 =item new( HASH )
 
-    $pol = SPM::Policy->new($allowuserpkgs,$priorityuserpkgs);
+    $pol = SPM::Policy->new($allowuserpkgs,$priorityuserpkgs,$protectkernel);
 
     Initialise a new Policy instance. "1" values enable the
     policy options.
@@ -72,12 +72,27 @@ $VERSION = 1.00;
 #-----------------------------------------------------------------------------#
 
 sub _initialize {
-    my ($self,$aup,$pup) = @_;
+    my ($self,$aup,$pup,$protectkern) = @_;
 
     # initial settings
     $self->_aup($aup);
     $self->_pup($pup);
+    $self->_protectkern($protectkern);
 
+    # uname -r might be easier?
+    # can cache, unlikely to change at runtime...
+    my $uname_r = LC::Sysinfo::uname->release(); 
+    my $kernel = $uname_r;
+    my $flavour = '';
+    if($kernel =~ m/^(.*)(largesmp|smp|xen|xenU|PAE|hugemem)$/) { # add exotic stuff here
+	$kernel = $1;
+	$flavour = $2;
+    }
+
+    $self->{_kernelversion} = $kernel;
+    $self->{_kernelflavour} = $flavour;
+    $self->debug(2," currently running kernel $flavour $kernel");
+ 
     return SUCCESS;
 }
 
@@ -177,6 +192,58 @@ sub _pup {
     return $self->{_PRIORITYTOUSERPACKAGES};
 }
 #============================================================================#
+# _protectkern - private (Protect currently-running kernel packages?)
+#----------------------------------------------------------------------------#
+sub _protectkern {
+    
+    # Return and/or set PROTECTKERNEL attribute
+
+    my $self = shift;
+    my $val = shift;
+
+    if (defined($val)) {
+	$self->{_PROTECTKERNEL} = $val;
+    }
+    return $self->{_PROTECTKERNEL};
+}
+#============================================================================#
+# _is_kernel_pkg - private (is the current packsage supposed to be
+# protected)?  should match on the currently-running kernel flavour
+# (but not other flavours or add-ons - up/smp, xen, -devel etc) and the
+# respective modules. Could/should use real RPM depencies, uses a
+# simple pattern instead.
+#----------------------------------------------------------------------------#
+sub _is_kernel_pkg {
+    my $self = shift;
+    my $pkg = shift;
+    my $ret = 0; # default:no
+
+    my $name = $pkg->get_name();
+    my $version_release = $pkg->get_version().'-'.$pkg->get_release();
+    my $kversrel = $self->{_kernelversion};
+    my $flavour = $self->{_kernelflavour};
+    my $kernelname = 'kernel';
+    if($flavour) {
+	$kernelname .= '-'.$flavour;
+    }
+    if( $version_release eq $kversrel && 
+	$name eq $kernelname) {
+	# kernel proper
+	$ret = 1;
+	$self->verbose("keeping current kernel $name-$version_release");
+    } elsif ($name =~ m/^(kernel-module|kmod).*?-$kversrel$flavour/) {
+	# module. RPM name is hardcoded, assumed to contain exact kernelversion
+	# but with the "flavour"/uname-r part at the end. yuck.
+	$ret = 1;
+	$self->verbose("keeping current module $name-$version_release");
+    } else {
+	$self->debug(5,"     is_kernel: no protection for $name-$version_release");
+    }
+
+    return $ret;
+}
+
+#============================================================================#
 # _apply_to_delete - private
 #----------------------------------------------------------------------------#
 sub _apply_to_delete {
@@ -193,12 +260,16 @@ sub _apply_to_delete {
     foreach my $pkg ($op->get_packages()) {
 	# If it's unwanted then do nothing on output 
 	# because it's not installed anyway
-	unless ($pkg->get_attrib()->{ISUNWANTED}) {
-	    # Now we know it's installed, but is it locally managed
-	    unless ($self->_aup() && $pkg->get_attrib()->{ISLOCAL}) {
-		push (@outops, SPM::Op->new(OP_DELETE, [$pkg]));
-	    }
-	}
+	next if ($pkg->get_attrib()->{ISUNWANTED});
+
+	# Now we know it's installed, but is it locally managed? if so, skip.
+	next if ($self->_aup() && $pkg->get_attrib()->{ISLOCAL});
+
+	# is the package somehow related to the current kernel (and do we care)? if so, skip.
+	next if ($self->_protectkern() && $self->_is_kernel_pkg($pkg));
+
+	# if nothing else, we keep the operation
+	push (@outops, SPM::Op->new(OP_DELETE, [$pkg]));
     }
     return \@outops;
 }
@@ -312,13 +383,14 @@ sub _apply_to_replace {
 
   # Here, we receive a set of source and target packages with the same
   # name, but which potentially are of different architectures (for
-  # multiarch platforms, e.g. x86_64, i386).
+  # multiarch platforms, e.g. x86_64, i386), or different versions ("multi" packages)
   #
   # The first step is to divide the $src and $tgt packages into
   # per-architecture sets, as each architecture needs to be handled
   # separatedly.
 
   my $pkg;
+  my $lastpkg; #debug info
 
   my %archs; # what architectures do we have? Note: more than two is possible in theory...
 
@@ -329,6 +401,7 @@ sub _apply_to_replace {
       $archs{$pkg->get_arch()} = 1;
     }
     push(@{$srcarchpkg{$pkg->get_arch()}},$pkg);
+    $lastpkg=$pkg;
   }
   my %tgtarchpkg; # this is a hash with key: architecture, value: ref(packages on that arch)
   foreach $pkg (@$tgtsref) {
@@ -337,6 +410,7 @@ sub _apply_to_replace {
       $archs{$pkg->get_arch()} = 1;
     }
     push(@{$tgtarchpkg{$pkg->get_arch()}},$pkg);
+    $lastpkg=$pkg;
   }
 
 
@@ -347,7 +421,7 @@ sub _apply_to_replace {
 
     # traverse each arch separately
 
-    $self->debug(4,"checking replace ops - architecture: $arch");
+    $self->debug(4,"checking replace ops for ".$lastpkg->get_name().", architecture: $arch");
 
     my $srcsref_arch=$srcarchpkg{$arch} || [()]; # set to empty if no package for a
     my $tgtsref_arch=$tgtarchpkg{$arch} || [()]; # given arch is found
@@ -370,15 +444,29 @@ sub _apply_to_replace {
 
       my @installed = grep { ! $_->get_attrib()->{ISUNWANTED} } @$srcsref_arch;
       foreach $pkg (@installed) {
+	$self->debug(5,"  REPLACE: looking at installed ".$pkg->get_name().'-'.$pkg->get_version().'-'.$pkg->get_release());
+
 	# Delete the installed sources
 	my @sames = grep { $_->is_equal($pkg) } @$tgtsref_arch;
-	unless (@sames) {
-	  push(@arch_ops,SPM::Op->new(OP_DELETE,[$pkg]));
-	}
+	if (@sames) {
+	    $self->debug(4,"   REPLACE: nothing to do for old ".$pkg->get_name().'-'.$pkg->get_version().'-'.$pkg->get_release());
+	} else {
+	    # is the package somehow related to the current kernel (and do we care)? if so, skip even if not in target list
+	    if (! ($self->_protectkern() && $self->_is_kernel_pkg($pkg))) {
+		$self->debug(3,"   REPLACE: marking old ".$pkg->get_name().'-'.$pkg->get_version().'-'.$pkg->get_release().' for deletion');
+		push(@arch_ops,SPM::Op->new(OP_DELETE,[$pkg]));
+	    } else {
+		$self->debug(3,"   REPLACE: protected old ".$pkg->get_name().'-'.$pkg->get_version().'-'.$pkg->get_release().' from deletion');
+	    }
+        }
       }
       foreach $pkg (@$tgtsref_arch) {
+	$self->debug(5,"  REPLACE: looking at target ".$pkg->get_name().'-'.$pkg->get_version().'-'.$pkg->get_release());
 	my @sames = grep { $_->is_equal($pkg) } @$srcsref_arch;
-	unless (@sames) {
+	if (@sames) {
+          $self->debug(4,"   REPLACE: nothing to do for target ".$pkg->get_name().'-'.$pkg->get_version().'-'.$pkg->get_release());
+	} else {
+          $self->debug(3,"   REPLACE: marking target ".$pkg->get_name().'-'.$pkg->get_version().'-'.$pkg->get_release().' for install');
 	  push(@arch_ops,SPM::Op->new(OP_INSTALL,[$pkg]));
 	}
       }

@@ -119,6 +119,13 @@ configuration and a user installed package, this policy determines
 whether the existing package is left unchanged.
 This option is only enabled if --userpkgs is set to 'yes'.
 
+=item --protectkernel (yes/no):
+
+"Protect the running kernel". When enabled, will try to keep SPMA from
+removing packages that belong to the currently-running kernel or one
+of it's modules, based on guesswork around the package names and
+versions vs B<"uname>.
+
 =item --usespmlist (yes/no):
 
 If set to yes, the SPMA will keep a list of 'owned' packages. If set to
@@ -460,6 +467,10 @@ sub app_options {
 	HELP =>'Give priority to user installed package versions in case of conflict',
 	DEFAULT =>'no'},
 
+       {NAME =>'protectkernel=s',
+	HELP =>'Protect currently-running kernel against removal',
+	DEFAULT =>'yes'},
+
        {NAME =>'usespmlist=s',
 	HELP =>'Allow SPMA to keep a list of owned packages (otherwise: all user packages)',
 	DEFAULT =>'yes'},
@@ -779,6 +790,11 @@ unless ($this_app->option('userprio') =~ m%^(yes|no)$%) {
 	       $this_app->option('userprio'));
   $this_app->finish(-1);
 }
+unless ($this_app->option('protectkernel') =~ m%^(yes|no)$%) {
+  $self->error('bad value for protectkernel option: '.
+	       $this_app->option('protectkernel'));
+  $this_app->finish(-1);
+}
 
 unless ($this_app->option('usespmlist') =~ m%^(yes|no)$%) {
   $self->error('bad value for usespmlist option: '.
@@ -797,6 +813,8 @@ my $userpkgs=0;
 $userpkgs=1 if ($this_app->option('userpkgs') eq 'yes');
 my $userprio=0;
 $userprio=1 if ($this_app->option('userprio') eq 'yes');
+my $protectkernel=1;
+$protectkernel=0 if ($this_app->option('protectkernel') eq 'no');
 my $usespmlist=0;
 $usespmlist=1 if ($this_app->option('usespmlist') eq 'yes');
 
@@ -899,6 +917,7 @@ $self->verbose('using packager: '.$packager);
 $self->verbose('target package list: '.$self->option('targetconf'));
 $self->verbose('user packages allowed: '.$userpkgs);
 $self->verbose('priority to user pkgs: '.$userprio);
+$self->verbose('protect current kernel: '.$protectkernel);
 $self->verbose('spma using a list of own pkgs: '.$usespmlist);
 $self->verbose('file for SPMA managed pkgs list: '.
 	       $self->option('spmlist'));
@@ -967,7 +986,7 @@ if ($packager eq 'rpm') {
 # priority to user packages) tuple.
 #
 
-my $policy = SPM::Policy->new($userpkgs,$userprio);
+my $policy = SPM::Policy->new($userpkgs,$userprio,$protectkernel);
 
 #
 # Find out what has already been done
@@ -1028,6 +1047,16 @@ $source->change_control($desired_array);
 
 # Note that Source->change_control saves the SPMA managed list again
 # to the file.
+
+if($this_app->option("debug") && $this_app->option("debug") >= 4) {
+    foreach my $pkg (@$desired_array) {
+	$this_app->debug(4, " target package n:".$pkg->get_name().
+			 " v:".$pkg->get_version().
+			 " r:".$pkg->get_release().
+			 " a:".$pkg->get_arch()
+			 );
+    }
+}
 
 #
 # Now, we have in $source->get_list() and $desired_array the whole
