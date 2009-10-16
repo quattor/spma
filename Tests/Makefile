@@ -11,7 +11,7 @@ spma_test: A B
 	./run_tests
 
 rpm:
-	cd SPECS;rpm -ba spma-test-${NAME}-${VERSION}.spec
+	cd SPECS;rpmbuild -ba spma-test-${NAME}-${VERSION}.spec
 
 install:
 	rpm -ivh ${RPM_DIR}/spma-test-${NAME}-${VERSION}-1.i386.rpm
