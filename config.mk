@@ -1,7 +1,7 @@
 COMP=spma
 NAME=$(COMP)
 DESCR=SPM Agent, quattor toolsuite
-VERSION=1.10.34
+VERSION=1.10.35
 RELEASE=1
 AUTHOR=German Cancio <German.Cancio@cern.ch>
 MAINTAINER=German Cancio <German.Cancio@cern.ch
@@ -12,4 +12,4 @@ MAN3DIR=$(QTTR_MAN)/man$(MANSECT)
 MAN1DIR=$(QTTR_MAN)/man1
 
 
-DATE=16/10/09 15:15
+DATE=10/11/09 18:54

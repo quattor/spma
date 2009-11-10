@@ -1,3 +1,8 @@
+2009-11-10  Guillaume Philippon
+
+	* Release: 1.10.35
+	- Fix regexp with largesmp kernel
+
 2009-10-16  Jan IVEN
 
 	* Release: 1.10.34
