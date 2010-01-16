@@ -1,3 +1,10 @@
+2010-01-16  Michel Jouvin
+
+	* Release: 1.11.0
+	- Fix bug in kernel regexp introduced in previous mod
+	Handle properly a kernel with an empty flavour (RPM name = kernel)
+	Minor version incremented to reflect the addition of protectkernel in 1.10.34
+
 2009-11-10  Guillaume Philippon
 
 	* Release: 1.10.35
