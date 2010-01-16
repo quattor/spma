@@ -87,8 +87,6 @@ sub _initialize {
     if($kernel =~ m/^(.*)((?:large)?smp|xen|xenU|PAE|hugemem)$/) { # add exotic stuff here
         $kernel = $1;
         $flavour = $2;
-    } elsif ( $kernel eq "kernel" ) {
-        my $kernel = "kernel";
     }
 
     $self->{_kernelversion} = $kernel;
