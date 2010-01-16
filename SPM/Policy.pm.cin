@@ -84,14 +84,16 @@ sub _initialize {
     my $uname_r = LC::Sysinfo::uname->release(); 
     my $kernel = $uname_r;
     my $flavour = '';
-    if($kernel =~ m/^(.*)((large)smp|xen|xenU|PAE|hugemem)$/) { # add exotic stuff here
-	$kernel = $1;
-	$flavour = $2;
+    if($kernel =~ m/^(.*)((?:large)?smp|xen|xenU|PAE|hugemem)$/) { # add exotic stuff here
+        $kernel = $1;
+        $flavour = $2;
+    } elsif ( $kernel eq "kernel" ) {
+        my $kernel = "kernel";
     }
 
     $self->{_kernelversion} = $kernel;
     $self->{_kernelflavour} = $flavour;
-    $self->debug(2," currently running kernel $flavour $kernel");
+    $self->debug(2," currently running kernel '$kernel', flavour '$flavour'");
  
     return SUCCESS;
 }
