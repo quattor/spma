@@ -1,5 +1,10 @@
 2010-01-16  Michel Jouvin
 
+	* Release: 1.11.1
+	- Remove useless test
+
+2010-01-16  Michel Jouvin
+
 	* Release: 1.11.0
 	- Fix bug in kernel regexp introduced in previous mod
 	Handle properly a kernel with an empty flavour (RPM name = kernel)
