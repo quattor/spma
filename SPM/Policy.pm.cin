@@ -84,7 +84,8 @@ sub _initialize {
     my $uname_r = LC::Sysinfo::uname->release(); 
     my $kernel = $uname_r;
     my $flavour = '';
-    if($kernel =~ m/^(.*)((?:large)?smp|xen|xenU|PAE|hugemem)$/) { # add exotic stuff here
+    # Be sure to use a non grid '.*'...
+    if($kernel =~ m/^(.*?)((?:large)?smp|xen|xenU|PAE|hugemem)$/) { # add exotic stuff here
         $kernel = $1;
         $flavour = $2;
     }

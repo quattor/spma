@@ -1,3 +1,8 @@
+2010-01-27  Michel Jouvin
+
+	* Release: 1.11.2
+	- Fix greedy kernel pattern preventing correct recognition of largesmp variant
+
 2010-01-16  Michel Jouvin
 
 	* Release: 1.11.1
