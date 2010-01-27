@@ -85,6 +85,7 @@ sub _initialize {
     my $kernel = $uname_r;
     my $flavour = '';
     # Be sure to use a non grid '.*'...
+    # NEVER change this regexp without testing first with script kernel-variant-test.pl.
     if($kernel =~ m/^(.*?)((?:large)?smp|xen|xenU|PAE|hugemem)$/) { # add exotic stuff here
         $kernel = $1;
         $flavour = $2;
