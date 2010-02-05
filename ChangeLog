@@ -1,3 +1,11 @@
+2010-02-05  Luis Fernando Muñoz Mejías <Luis.Fernando.Munoz.Mejias@cern.ch>
+
+	* Release: 1.11.3
+	- Stop using shell expansions within LC::Process.
+
+	Now all processes take lists of arguments so they won't spawn
+	subshells and won't get broken by the next perl-LC.
+
 2010-01-27  Michel Jouvin
 
 	* Release: 1.11.2

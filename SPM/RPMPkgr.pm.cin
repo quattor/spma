@@ -53,12 +53,13 @@ use SPM::Op qw(OP_INSTALL OP_DELETE OP_REPLACE);
 
 @ISA = qw(SPM::Packager);
 
-my $RPM_EXECUTABLE = "/bin/rpm";
+use constant RPM_EXECUTABLE => "/bin/rpm";
 
-my $QUERY_COMMAND = $RPM_EXECUTABLE . " -qa --queryformat '- %{NAME} %{VERSION} %{RELEASE} %{ARCH} %{PUBKEYS}\n' ";
-my $DEFAULT_DB = '/var/lib/rpm';
+use constant QUERY_COMMAND => (RPM_EXECUTABLE, qw(-qa --queryformat),
+			       "- %{NAME} %{VERSION} %{RELEASE} %{ARCH} %{PUBKEYS}\n");
+use constant DEFAULT_DB => "/var/lib/rpm";
+use constant LSOF_BIN => "/usr/sbin/lsof";
 
-my $LSOF_BIN='/usr/sbin/lsof';
 
 my @RPMT_STDERR_FAIL_STR=(
    '^'.quotemeta('rpmt: rpmio_internal.h:').'.+'.quotemeta(': c2f: Assertion `fd && fd->magic ==').'.+\ failed\.',
@@ -118,17 +119,17 @@ sub get_installed_list {
 
     my @pkgs;
 
-    my $cmd = $QUERY_COMMAND." --dbpath ".$self->_get_dbpath();
-    $cmd .= " --root=" . $this_app->option('root') 
+    my @cmd = (QUERY_COMMAND, "--dbpath", $self->_get_dbpath());
+    push(@cmd, "--root", $this_app->option('root'))
 	if ($this_app->option('root'));
 
-    $self->debug(1,'getting locally installed packages with '.$cmd);
+    $self->debug(1,'getting locally installed packages with '.join(" ", @cmd));
     unless ($self->_free_rpmdb_access()) {
       $self->error("Cannot free RPMdb access");
       return undef;
     }
 
-    my $execute_status = LC::Process::execute([ $cmd ],
+    my $execute_status = LC::Process::execute(\@cmd,
 					      timeout => 20*60,
 					      stdout => \$qryout,
 					      stderr => \$err
@@ -224,42 +225,42 @@ sub execute_ops {
       $self->error("cannot find rpmt in ".$this_app->option('rpmtpath'));
       return (-1);
     }
-    my $cmd=$path_exec;
+    my @cmd=($path_exec);
     if ($execname ne 'rpmt-py') {
       # 'old' rpmt
-      $cmd .= " --oldpackage --dbpath ".$dbpath;
+      push(@cmd, "--oldpackage", "--dbpath", $dbpath);
     } else {
       # 'new' rpmt-py
-      $cmd .= " --nosignature" unless ($this_app->option('checksig'));
+      push(@cmd, "--nosignature") unless ($this_app->option('checksig'));
     }
 
     if ($self->_get_testing()) {
-      $cmd .= " --test";
+      push(@cmd,"--test");
     } else {
       # not testing, but real run: ignore SIGs in order to avoid RPMDB
       # corruption due do a well-known RPM bug!
       $SIG{$_}='IGNORE' foreach qw(HUP PIPE INT QUIT);
     }
-    $cmd .= " --verbose" if ($this_app->option('verbose')
+    push(@cmd, "--verbose") if ($this_app->option('verbose')
 			     || $this_app->option('debug'));
 #    $cmd .= " --percent" if ($this_app->option('debug'));
-    $cmd .= " --root=" . $this_app->option('root') 
+    push(@cmd, "--root=".$this_app->option('root'))
 	if ($this_app->option('root'));
 
     if (defined $self->{'FWDPROXY'}) {
-      $cmd .= " --httpproxy=".$self->{'FWDPROXY'}.
-	" --ftpproxy=".$self->{'FWDPROXY'};
+      push(@cmd, "--httpproxy=".$self->{'FWDPROXY'},
+	   "--ftpproxy=".$self->{'FWDPROXY'});
       if (defined $self->{'FWDPROXYPORT'}) {
-	$cmd .= " --httpport=".$self->{'FWDPROXYPORT'}.
-	  " --ftpport=".$self->{'FWDPROXYPORT'};
+	push(@cmd, "--httpport=".$self->{'FWDPROXYPORT'},
+	     "--ftpport=".$self->{'FWDPROXYPORT'});
       }
     }
     if ($execname eq 'rpmt-py') {
-      $cmd .= ' --in';
+      push(@cmd, '--in');
     }
 
 
-    $self->verbose ("command to be executed: $cmd $rpmtops");
+    $self->verbose ("command to be executed: ", join(" ",@cmd, "$rpmtops"));
     $self->verbose ("rpmt operations in $rpmtops :\n",
 		    file_contents($rpmtops));
 
@@ -267,7 +268,7 @@ sub execute_ops {
       $self->error("cannot free RPM DB access");
       return (-1);
     }
-    my $execute_status = LC::Process::execute([ "$cmd $rpmtops" ],
+    my $execute_status = LC::Process::execute([@cmd, $rpmtops],
 					      timeout => 86400,
 					      stdout => \$rpmtout,
 					      stderr => \$err
@@ -409,7 +410,7 @@ sub _free_rpmdb_access {
       my $dbpath=$self->_get_dbpath();
       while ($tries--) {
         $self->verbose ("checking for other applications accessing $dbpath/Packages");
-	my $execute_status = LC::Process::execute([ "$LSOF_BIN -t $dbpath/Packages" ],
+	my $execute_status = LC::Process::execute([ LSOF_BIN, "-t", "$dbpath/Packages" ],
                                               timeout => 10*60,
                                               stdout => \$stdout,
                                               stderr => \$stderr
@@ -420,23 +421,21 @@ sub _free_rpmdb_access {
 	    $self->warn($EC->error->text);
 	    $EC->ignore_error();
 	  }
-	  $self->warn("cannot run $LSOF_BIN - continuing anyway...");
+	  $self->warn("cannot run ", LSOF_BIN, " - continuing anyway...");
 	  return SUCCESS;
 	}
         my @procs=split("\n",$stdout);
         if (scalar @procs) {
-          my $killpids=join(' ',@procs);
-          chomp($killpids);
           if ($tries==1) {
             $self->error ('other processes blocking SPMA to access the RPM database,\
- and not listening to SIGTERM (pid: '.$killpids.'): SPMA giving up.');
+ and not listening to SIGTERM (pid: ', join(' ', @procs), ': SPMA giving up.');
             return undef;
           }
-          $self->info("found pids $killpids blocking RPMdb, TERMinating them...");
+          $self->info("found pids ", join(" ", @procs), " blocking RPMdb, TERMinating them...");
 	  $self->verbose("tries to go: $tries");
-          `kill -TERM $killpids 2>/dev/null 1>/dev/null`;
+          kill('TERM', @procs);
           sleep(5);
-          `kill -KILL $killpids 2>/dev/null 1>/dev/null`;
+          kill('KILL', @procs);
         } else {
           last;
         }
@@ -472,10 +471,15 @@ sub _rpm_set_options {
   $self->{_OPTS}->{RPMEXCLUSIVE}=0;
   $self->{_OPTS}->{SETARCHINTRANS}=1;
 
-  my $rpm_version = `$RPM_EXECUTABLE --version 2>/dev/null`;
+  LC::Process::execute([RPM_EXECUTABLE, '--version'],
+		       stdout => \my $rpm_version,
+		       stderr => \my $rpm_version_err);
+  $self->warn(RPM_EXECUTABLE, "--version produced STDERR output:",
+	      $rpm_version_err);
   # should be in the form 'RPM version X.Y.Z'
   if ($?) {
-    $self->error ("cannot run $RPM_EXECUTABLE, aborting");
+    $self->error ("cannot run ", join(" ", RPM_EXECUTABLE, '--version'),
+		  ", aborting");
     return undef;
   }
   if ($rpm_version !~ /(\d+\.\d+\.\d+)/) {
