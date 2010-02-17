@@ -1,3 +1,8 @@
+2010-02-17  Jan IVEN
+
+	* Release: 1.11.4
+	- allow updating modules in place even for current kernel (still #49733)
+
 2010-02-05  Luis Fernando Muñoz Mejías <Luis.Fernando.Munoz.Mejias@cern.ch>
 
 	* Release: 1.11.3
