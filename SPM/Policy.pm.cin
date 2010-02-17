@@ -84,7 +84,7 @@ sub _initialize {
     my $uname_r = LC::Sysinfo::uname->release(); 
     my $kernel = $uname_r;
     my $flavour = '';
-    # Be sure to use a non grid '.*'...
+    # Be sure to use a non-greedy '.*'...
     # NEVER change this regexp without testing first with script kernel-variant-test.pl.
     if($kernel =~ m/^(.*?)((?:large)?smp|xen|xenU|PAE|hugemem)$/) { # add exotic stuff here
         $kernel = $1;
@@ -209,7 +209,7 @@ sub _protectkern {
     return $self->{_PROTECTKERNEL};
 }
 #============================================================================#
-# _is_kernel_pkg - private (is the current packsage supposed to be
+# _is_kernel_pkg - private (is the current package supposed to be
 # protected)?  should match on the currently-running kernel flavour
 # (but not other flavours or add-ons - up/smp, xen, -devel etc) and the
 # respective modules. Could/should use real RPM depencies, uses a
@@ -218,6 +218,7 @@ sub _protectkern {
 sub _is_kernel_pkg {
     my $self = shift;
     my $pkg = shift;
+    my $justkernel = shift;   # can turn on/off module protections
     my $ret = 0; # default:no
 
     my $name = $pkg->get_name();
@@ -233,7 +234,8 @@ sub _is_kernel_pkg {
 	# kernel proper
 	$ret = 1;
 	$self->verbose("keeping current kernel $name-$version_release");
-    } elsif ($name =~ m/^(kernel-module|kmod).*?-$kversrel$flavour/) {
+    } elsif (! $justkernel && 
+               $name =~ m/^(kernel-module|kmod).*?-$kversrel$flavour/) {
 	# module. RPM name is hardcoded, assumed to contain exact kernelversion
 	# but with the "flavour"/uname-r part at the end. yuck.
 	$ret = 1;
@@ -268,7 +270,7 @@ sub _apply_to_delete {
 	next if ($self->_aup() && $pkg->get_attrib()->{ISLOCAL});
 
 	# is the package somehow related to the current kernel (and do we care)? if so, skip.
-	next if ($self->_protectkern() && $self->_is_kernel_pkg($pkg));
+	next if ($self->_protectkern() && $self->_is_kernel_pkg($pkg, 0));
 
 	# if nothing else, we keep the operation
 	push (@outops, SPM::Op->new(OP_DELETE, [$pkg]));
@@ -454,7 +456,8 @@ sub _apply_to_replace {
 	    $self->debug(4,"   REPLACE: nothing to do for old ".$pkg->get_name().'-'.$pkg->get_version().'-'.$pkg->get_release());
 	} else {
 	    # is the package somehow related to the current kernel (and do we care)? if so, skip even if not in target list
-	    if (! ($self->_protectkern() && $self->_is_kernel_pkg($pkg))) {
+            # protection does not extend to kernel modules, these can be updated in place
+	    if (! ($self->_protectkern() && $self->_is_kernel_pkg($pkg, 1))) {
 		$self->debug(3,"   REPLACE: marking old ".$pkg->get_name().'-'.$pkg->get_version().'-'.$pkg->get_release().' for deletion');
 		push(@arch_ops,SPM::Op->new(OP_DELETE,[$pkg]));
 	    } else {
