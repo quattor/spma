@@ -1,3 +1,8 @@
+2010-05-03  Jan IVEN
+
+	* Release: 1.11.5
+	- bug #49733, comment 11: do not combine "protected" RPM operations
+
 2010-02-17  Jan IVEN
 
 	* Release: 1.11.4
