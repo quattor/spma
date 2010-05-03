@@ -432,6 +432,8 @@ sub _apply_to_replace {
 
     my @arch_ops = (); # per-arch operations to be performed
 
+    my $is_something_to_protect = 0;  # inside this operation we touch a "protected" RPM; can't combine these..
+
     # No mandatory or unwanted targets so we have simple unequal lists
     # >>> NO MANDATORY or UNWANTED packages in the target list <<<
 
@@ -462,6 +464,7 @@ sub _apply_to_replace {
 		push(@arch_ops,SPM::Op->new(OP_DELETE,[$pkg]));
 	    } else {
 		$self->debug(3,"   REPLACE: protected old ".$pkg->get_name().'-'.$pkg->get_version().'-'.$pkg->get_release().' from deletion');
+		$is_something_to_protect = 1;
 	    }
         }
       }
@@ -477,8 +480,9 @@ sub _apply_to_replace {
       }
     }
 
-    if (@$tgtsref_arch == 1) {
-      # With only a single target we have the chance of converting (back) to
+    if (@$tgtsref_arch == 1 && 
+	! $is_something_to_protect ) {
+      # With only a single non-protected target we have the chance of converting (back) to
       # a replace operation
       unless ($self->_combine_ops(\@arch_ops)) {
 	return;
