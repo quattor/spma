@@ -1,3 +1,21 @@
+2010-05-26  <unknown>
+
+	* Release: 1.11.6
+	- allow for proxy servers to be randomized
+	
+	Provide a new option 'proxyrandom' that defaults to 'no' (i.e. preserving
+	old behaviour). If set to 'yes', then the list of proxy is put into        
+	random order to avoid all clients hitting the same proxy server.
+
+2010-05-26  <unknown>
+
+	* Release: 1.11.6
+	- allow for proxy servers to be randomized
+	
+	Provide a new option 'proxyrandom' that defaults to 'no' (i.e. preserving
+	old behaviour). If set to 'yes', then the list of proxy is put into
+	random order to avoid all clients hitting the same proxy server.
+
 2010-05-03  Jan IVEN
 
 	* Release: 1.11.5

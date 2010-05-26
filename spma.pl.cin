@@ -520,6 +520,10 @@ sub app_options {
 	HELP => 'comma-separated list of IP addresses or DNS names of the proxy hosts',
 	DEFAULT =>undef},
 
+       {NAME => 'proxyrandom=s',
+        HELP => 'Pick a random proxy server (yes/no)',
+        DEFAULT => 'no'},
+
        {NAME =>'proxyport:i',
 	HELP => 'Port number on the proxy host'},
 
@@ -649,6 +653,7 @@ use IO::Handle;
 use strict;
 use vars qw($this_app $self %SIG $DEBUG $exec_status $pkgobj $source);
 use POSIX qw(strftime);
+use Sys::Hostname;
 
 use SPM::RPMPkgr ();
 use SPM::SysVPkgr ();
@@ -949,7 +954,7 @@ if ($this_app->option('proxy') eq 'yes') {
     }
     my $i;
     my $found=0;
-    foreach $i (split /,/,$proxyhostlist) {
+    foreach $i (hostrandomize(split /,/,$proxyhostlist)) {
       if ($self->ServiceCheck($i,$proxyport)) {
 	$proxyhost=$i;
 	$self->info('active proxy found: '.$proxyhost);
@@ -1108,6 +1113,33 @@ if ($exec_status) {
 $this_app->finish($exec_status);
 
 
+#
+# Randomization algorithm always generates server list
+# in the same order for the same host if 'proxyrandom' is 
+# set to 'yes'. Otherwise, the ordering of proxy servers
+# is the same as specified in the config (e.g. if you
+# want to prioritize servers).
+#
+sub hostrandomize {
+  my @servers = @_;
+  if ($this_app->option('proxyrandom') eq 'no') {
+    return @servers;
+  }
+  my $hostname = hostname;
+
+  if ((scalar @servers) > 1) {
+    my @addrs   = (gethostbyname($hostname))[4];
+    my @quad    = unpack('C4', $addrs[0]);
+
+    my $rotates = $quad[3] % (scalar @servers);
+    for (my $i = 0; $i < $rotates; $i++) {
+      my $elem = shift(@servers);
+      push(@servers, $elem);
+    }
+  }
+
+  return @servers;
+}
 
 
 
