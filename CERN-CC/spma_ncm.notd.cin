@@ -7,6 +7,7 @@ spma_ncm {
         exec=@QTTR_SBIN@/spma_ncm_wrapper.sh
         priority=500
         waittofin=yes
+        waittorun=10
 }
 
 

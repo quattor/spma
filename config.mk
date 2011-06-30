@@ -2,7 +2,7 @@ COMP=spma
 NAME=$(COMP)
 DESCR=SPM Agent, quattor toolsuite
 VERSION=1.11.6
-RELEASE=1
+RELEASE=2
 AUTHOR=German Cancio <German.Cancio@cern.ch>
 MAINTAINER=German Cancio <German.Cancio@cern.ch
 

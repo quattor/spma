@@ -79,7 +79,7 @@ rm -rf $RPM_BUILD_ROOT
 %package -n CERN-CC-spma-notd
 Group: @GROUP@/System
 Summary: quattor SPMA config wrappers for CERN-CC
-Requires: spma >= @VERSION@
+Requires: spma
 Requires: ncm-ncd
 Requires: ncm-spma
 Requires: CERN-CC-notd
