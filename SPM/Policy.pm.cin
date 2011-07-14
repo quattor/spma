@@ -91,6 +91,10 @@ sub _initialize {
         $flavour = $2;
     }
 
+    # next code line will, if necessary, remove the architecture from $kernel to make the future comparisons with the packages names possible
+    # this happens because in version 6 of slc the command 'uname -a' returns the architecture attached to the version
+    $kernel =~ s/(\.x86_64)$//;
+
     $self->{_kernelversion} = $kernel;
     $self->{_kernelflavour} = $flavour;
     $self->debug(2," currently running kernel '$kernel', flavour '$flavour'");

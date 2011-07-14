@@ -1,3 +1,8 @@
+2011-07-14  Veronique Lefebure,31 1-022,,
+
+	* Release: 1.11.7
+	- fix for kernel handling on SL6
+
 2011-06-30 Ulrich Schwickerath
         * Release: 1.11.6-2
 	- decouple the CERN-CC specific packages from the exact spma version
