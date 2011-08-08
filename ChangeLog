@@ -1,3 +1,8 @@
+2011-08-08  Veronique Lefebure,31 1-022,,
+
+	* Release: 1.11.8
+	- pass noaction option to ncm-grub in spma_wrapper.sh
+
 2011-07-14  Veronique Lefebure,31 1-022,,
 
 	* Release: 1.11.7
