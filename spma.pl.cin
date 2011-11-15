@@ -544,6 +544,11 @@ sub app_options {
        {NAME =>'checksig',
 	HELP =>'(rpm only) enforce package signature checking.'},
 
+    { NAME    => 'facility=s',
+    HELP    => 'facility name for syslog',
+    DEFAULT => 'local1' }
+
+
        );
 
 

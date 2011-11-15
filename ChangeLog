@@ -1,3 +1,8 @@
+2011-11-15  Loic Brarda
+
+	* Release: 1.12.0
+	- Add parameter to be able to specify syslog facility
+
 2011-08-08  Veronique Lefebure,31 1-022,,
 
 	* Release: 1.11.8

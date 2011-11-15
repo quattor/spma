@@ -92,3 +92,6 @@ localcache = yes
 # * verbose output
 #verbose =
 
+# * Syslog facility to be used.
+#facility =
+
