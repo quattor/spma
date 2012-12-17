@@ -12,9 +12,9 @@ fi
 # run fetch, ncm-spma, SPMA, ncm-grub
 #
 
-@QTTR_SBIN@/ccm-fetch >>@QTTR_LOG@/ccm-fetch.log && \
-@QTTR_SBIN@/ncm-ncd --configure spma && \
-@QTTR_BIN@/spma $* && \
-@QTTR_SBIN@/ncm-ncd --configure grub $*
+/usr/sbin/ccm-fetch >>/var/log/ccm-fetch.log && \
+/usr/sbin/ncm-ncd --configure spma && \
+/usr/bin/spma $* && \
+/usr/sbin/ncm-ncd --configure grub $*
 
 

@@ -1,9 +1,0 @@
-SPMA is an acronym for Software Package Manager Agent.
-
-It is part of the 'quattor' toolsuite, http://cern.ch/quattor
-
-A dummy configuration file (to be copied to /etc/) can be found in this
-directory.
-
------------------------------------------------------------------------
-German Cancio <German.Cancio@cern.ch>

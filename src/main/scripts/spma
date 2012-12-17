@@ -1,4 +1,4 @@
-#!@PERL_EXECUTABLE@ -w
+#!/usr/bin/perl -w
 #
 #
 # SPMA: Software Package Manager Agent
@@ -407,8 +407,8 @@ B<http://cern.ch/quattor>
 # Beginning sequence for EDG initialization
 #
 BEGIN {
-  # use perl libs in @QTTR_PERLLIB@
-  unshift(@INC, '@QTTR_PERLLIB@');
+  # use perl libs in /usr/lib/perl
+  unshift(@INC, '/usr/lib/perl');
   unshift(@INC,'/opt/edg/lib/perl');
 }
 
@@ -446,18 +446,18 @@ sub app_options {
 
        {NAME =>'logfile=s',
         HELP =>'path/filename to use for SPMA logs.',
-        DEFAULT=>'@QTTR_LOG@/spma.log'},
+        DEFAULT=>'/var/log/spma.log'},
 
        {NAME =>'cfgfile=s',
 	HELP =>'configuration file for SPMA defaults.',
-	DEFAULT=>'@QTTR_ETC@/spma.conf'},
+	DEFAULT=>'/etc/spma.conf'},
 
        {NAME =>'noaction',
 	HELP =>'do not actually perform operations.'},
 
        {NAME =>'targetconf=s',
 	HELP =>'SPMA target configuration file.',
-	DEFAULT => '@QTTR_VAR@/lib/spma-target.cf'},
+	DEFAULT => '/var/lib/spma-target.cf'},
 
        {NAME =>'userpkgs=s',
 	HELP =>'Allow user (== non-SPMA) installed packages',
@@ -482,7 +482,7 @@ sub app_options {
 
        {NAME =>'spmlist=s',
 	HELP =>'file to use for storing the SPMA managed package list.',
-	DEFAULT =>'@QTTR_VAR@/lib/spma-managed-packages'},
+	DEFAULT =>'/var/lib/spma-managed-packages'},
 
        {NAME =>'localcache=s',
 	HELP => 'enable local cache for packages (yes/no)',
@@ -490,7 +490,7 @@ sub app_options {
 
        {NAME =>'cachedir=s',
 	HELP => 'directory where to find the local cache for packages',
-	DEFAULT =>'@QTTR_VAR@/spma-cache/'},
+	DEFAULT =>'/var/spma-cache/'},
 
        {NAME =>'root=s',
 	HELP => 'root directory for installation'},
@@ -562,7 +562,7 @@ sub app_options {
 
 sub lock {
   my $self=shift;
-  $self->{LOCK}=CAF::Lock->new('@QTTR_LOCKD@/spma');
+  $self->{LOCK}=CAF::Lock->new('/var/lock/quattor/spma');
   my $lock_flag=FORCE_IF_STALE;
   $lock_flag=FORCE_ALWAYS if ($self->option("forcelock"));
   unless ($self->{LOCK}->set_lock($self->option("retries"),
@@ -593,7 +593,7 @@ sub _initialize {
   #
   # external version number
   #
-  $self->{'VERSION'} ='@VERSION@';
+  $self->{'VERSION'} ='1.12.0';
   #
   # show setup text
   #
