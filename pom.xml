@@ -6,7 +6,7 @@
   <artifactId>spma</artifactId>
 
   <packaging>pom</packaging>
-  <version>2.1.1-SNAPSHOT</version>
+  <version>2.1.1</version>
   <name>Software Package Management Agent.</name>
 
   <repositories>
